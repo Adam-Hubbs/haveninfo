@@ -1,27 +1,33 @@
 {
-	"name": "positron-extension-template",
-	"displayName": "Positron Extension Template",
-	"description": "Template for creating extensions that integrate with Positron IDE",
+	"name": "r-haven-info",
+	"displayName": "Haven Info",
+	"description": "R Haven Labeled information on hover",
 	"version": "0.1.0",
-	"publisher": "your-publisher-name",
+	"publisher": "adam-hubbs",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/YOUR_USERNAME/YOUR_EXTENSION_NAME"
+		"url": "https://github.com/Adam-Hubbs/haveninfo"
 	},
 	"engines": {
 		"vscode": "^1.74.0",
 		"positron": "^2025.6.x"
 	},
 	"categories": [
-		"Other"
+		"Data Science"
 	],
-	"activationEvents": [],
+	"activationEvents": [
+		"onLanguage:r"
+	],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "positronExtension.demo",
-				"title": "Positron Extension Demo"
+				"command": "haven-info.hello-world",
+				"title": "Haven Info Hello World"
+			},
+			{
+				"command": "haven-info.get-variables",
+				"title": "Haven Info Get Variables"
 			}
 		]
 	},
