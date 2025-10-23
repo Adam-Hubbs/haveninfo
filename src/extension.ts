@@ -19,8 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
       const range = document.getWordRangeAtPosition(position, /\w+(\$\w+|\[\[["']?\w+["']?\]\])?/);
       if (!range) return;
 
-      const text = document.getText(range);
-      const parsed = VariableParser.parseVariable(text);
+      const parsed = VariableParser.parseVariable(document, position);
 
       let label: string | undefined;
       
