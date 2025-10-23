@@ -1,6 +1,6 @@
 // variableParser.ts
 export class VariableParser {
-  static parseVariable(text: string): { type: 'simple' | 'dataframe', variable: string, column?: string } {
+  static parseVariable(text: string): { type: 'dataframe', variable: string, column?: string } | undefined{
     // Check for dataframe$column pattern
     const dollarMatch = text.match(/^(\w+)\$(\w+)$/);
     if (dollarMatch) {
@@ -20,11 +20,7 @@ export class VariableParser {
         column: bracketMatch[2]
       };
     }
-
-    // Simple variable
-    return {
-      type: 'simple',
-      variable: text
-    };
+    
+    return undefined;
   }
 }

@@ -24,7 +24,7 @@ export function activate(context: vscode.ExtensionContext) {
 
       let label: string | undefined;
       
-      if (parsed.type === 'dataframe') {
+      if (parsed) {
         label = await HavenLabels.getDataFrameColumnLabels(
           parsed.variable, 
           parsed.column!
