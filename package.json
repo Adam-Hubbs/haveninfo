@@ -19,18 +19,6 @@
 		"onLanguage:r"
 	],
 	"main": "./out/extension.js",
-	"contributes": {
-		"commands": [
-			{
-				"command": "haven-info.hello-world",
-				"title": "Haven Info Hello World"
-			},
-			{
-				"command": "haven-info.get-variables",
-				"title": "Haven Info Get Variables"
-			}
-		]
-	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
