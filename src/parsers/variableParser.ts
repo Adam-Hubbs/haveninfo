@@ -1,7 +1,7 @@
 // parsers/variableParser.ts
 import * as vscode from 'vscode';
 export class VariableParser {
-  static parseVariable(document: vscode.TextDocument, position: vscode.Position): { type: 'simple' | 'dataframe', variable: string, column?: string } | undefined {
+  static parseVariable(document: vscode.TextDocument, position: vscode.Position): { type: 'dataframe', variable: string, column?: string } | undefined {
     const line = document.lineAt(position.line).text;
     const wordRange = document.getWordRangeAtPosition(position);
     if (!wordRange) return undefined;
@@ -10,6 +10,9 @@ export class VariableParser {
     const wordStart = wordRange.start.character;
     const wordEnd = wordRange.end.character;
     
+    // Check if word is a number
+    if (!isNaN(Number(word))) return undefined;
+
     // Check if word is in quotes
     if (this.isInQuotes(line, wordStart)) return undefined;
     
@@ -82,6 +85,12 @@ export class VariableParser {
     while (lineNum >= 0) {
         const line = document.lineAt(lineNum).text.trim();
         
+        // If line ends with ( or , continue to previous line
+        if (line.endsWith('(') || line.endsWith(',')) {
+            lineNum--;
+            continue;
+        }
+        
         if (line.endsWith('%>%') || line.endsWith('|>')) {
             const words = line.split(/\s+/);
             const lastWord = words[words.length - 2];
@@ -105,8 +114,8 @@ export class VariableParser {
             break;
         }
         
-    lineNum--;
+        lineNum--;
     }
     return lastDataframe;
-    }
+  }
 }

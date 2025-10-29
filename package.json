@@ -2,15 +2,15 @@
 	"name": "r-haven-info",
 	"displayName": "Haven Info",
 	"description": "R Haven Labeled information on hover",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"publisher": "adam-hubbs",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Adam-Hubbs/haveninfo"
 	},
 	"engines": {
-		"vscode": "^1.74.0",
-		"positron": "^2025.6.x"
+		"vscode": "^1.100.0",
+		"positron": "^2025.9.x"
 	},
 	"categories": [
 		"Data Science"
