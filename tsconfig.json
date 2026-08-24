@@ -1,8 +1,11 @@
 {
 	"compilerOptions": {
 		"module": "commonjs",
-		"target": "es2020",
-		"lib": ["es2020"],
+		"target": "es2022",
+		"lib": ["es2022"],
+		"types": ["node", "vscode", "mocha"],
+		"esModuleInterop": true,
+		"skipLibCheck": true,
 		"outDir": "out",
 		"sourceMap": true,
 		"strict": true,

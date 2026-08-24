@@ -1,5 +1,6 @@
 import * as path from 'path';
-import * as Mocha from 'mocha';
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- mocha's `export =` typing needs TS's import-equals form to remain constructable.
+import Mocha = require('mocha');
 import { glob } from 'glob';
 
 export function run(): Promise<void> {
