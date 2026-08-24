@@ -1,98 +1,94 @@
 // providers/havenLabels.ts
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as os from 'os';
-import * as fs from 'fs';
+import { tryAcquirePositronApi } from '@posit-dev/positron';
 import { Logger } from '../utils/logger';
-import { tryAcquirePositronApi } from "@posit-dev/positron";
-import { type RuntimeCodeExecutionMode, RuntimeErrorBehavior} from "@posit-dev/positron";
+
+/**
+ * `resolveReference` only ever emits identifiers/strings pulled from real
+ * AST nodes, which already rules out most injection concerns -- but since
+ * we still interpolate these into R source text, double-check they look
+ * like plain R identifiers (or dotted names) before doing so, as
+ * defense-in-depth against a future extractor bug.
+ */
+const R_IDENTIFIER = /^[.a-zA-Z][.a-zA-Z0-9_]*$/;
 
 class HavenLabelsProvider {
-    private positron: ReturnType<typeof tryAcquirePositronApi>;
-    private executionMode: RuntimeCodeExecutionMode;
-    private executionErrorBehavior: RuntimeErrorBehavior;
-    constructor() {
-        this.positron = tryAcquirePositronApi();
-        if (!this.positron) Logger.info("Positron API not available.");
-        this.executionMode = "silent" as RuntimeCodeExecutionMode;
-        this.executionErrorBehavior = "continue" as RuntimeErrorBehavior;
-        Logger.info("HavenLabelsProvider initialized.");
-    }
-    private async executeRCode(code: string, tmpPath: string): Promise<string | undefined> {
-        if (!this.positron) return undefined;
-
-        const observer = {
-        onError: (error: string) =>
-          vscode.window.showInformationMessage("Error:", error)
-      };
-
-        const result = await this.positron.runtime.executeCode("r", code, false, undefined, this.executionMode, this.executionErrorBehavior, observer);
-        
-        await this.waitForFile(tmpPath);
-
-        const contents = fs.readFileSync(tmpPath, 'utf-8');
-        const parsed = JSON.parse(contents);
-        
-        Logger.info("Haven Label:", parsed);
-
-        if (!result || result.length === 0 || result[0] === "NULL") {
-            return undefined;
-        } else {
-            return parsed;
-        }
+  /**
+   * Looks up the haven `label` attribute of `dataframe[[column]]`, if any,
+   * by silently evaluating a small R snippet in the user's own R session.
+   *
+   * Silent and non-interrupting by design:
+   *  - Uses `positron.runtime.evaluateCode`, which Positron documents as
+   *    evaluating "silently ... without displaying output in the console or
+   *    notifying the user" -- unlike `executeCode`, nothing is echoed to the
+   *    console or run through the normal interactive-execution UI.
+   *  - Only queries a session that's already running; never starts one just
+   *    because the user hovered over some text (`evaluateCode`/`executeCode`
+   *    will auto-start a session if none exists, which we deliberately avoid
+   *    triggering from a hover).
+   *  - Every failure mode (no Positron API, no R session, R-side error,
+   *    missing `haven` package, non-existent dataframe/column, cancellation)
+   *  resolves to `undefined` rather than throwing or surfacing anything to
+   *    the user -- a hover that can't resolve a label should just show
+   *    nothing, never an error.
+   */
+  async getDataFrameColumnLabel(
+    dataframe: string,
+    column: string,
+    cancellationToken?: vscode.CancellationToken,
+  ): Promise<string | undefined> {
+    if (!R_IDENTIFIER.test(dataframe) || !R_IDENTIFIER.test(column)) {
+      return undefined;
     }
 
-    async getDataFrameColumnLabels(dfName: string, colName: string): Promise<string | undefined> {
-
-        Logger.info(`Getting label for ${dfName}$${colName}`);
-        const tmpPath = path.join(os.tmpdir(), `r_haven_labels_${Date.now()}.json`);
-        const rTmpPath = tmpPath.replace(/\\/g, '/');
-
-        // In the future provide an observer to handle errors. Especially missing r libraries
-        const code = `
-        jsonlite::write_json({
-            tryCatch({
-                if (is.data.frame(${dfName}) && haven::is.labelled(${dfName}$${colName})) {
-                    dput(attr(${dfName}$${colName}, "label"))
-                } else {
-                    NULL
-                }
-            }, error = function(e) {
-                NULL
-            })},        
-        path = "${rTmpPath}",
-        auto_unbox = TRUE)
-        `.trim();
-        
-        // extract result
-        return await this.executeRCode(code, tmpPath);
+    const positron = tryAcquirePositronApi();
+    if (!positron) {
+      return undefined;
     }
 
-    /**
- * Waits for a file to appear in the file system, periodically checking for its
- * existence until a timeout is reached or the file is found.
- * @param filePath The path to the file to wait for.
- * @param timeout The maximum time to wait for the file to appear, in milliseconds.
- * @returns A promise that resolves when the file is found or rejects when the
- * timeout is reached.
- */
-private async waitForFile(filePath: string, timeout = 500): Promise<void> {
-    return new Promise((resolve, reject) => {
-        const start = Date.now();
+    const session = await positron.runtime.getForegroundSession();
+    if (!session || session.runtimeMetadata.languageId !== 'r') {
+      return undefined;
+    }
 
-        const interval = setInterval(() => {
-            if (fs.existsSync(filePath)) {
-                clearInterval(interval);
-                resolve();
-            } else if (Date.now() - start > timeout) {
-                clearInterval(interval);
-                const error = new Error(vscode.l10n.t("Timeout waiting for file: {0}", filePath));
-                vscode.window.showErrorMessage(error.message);
-                reject(error);
-            }
-        }, 100);
-    });
+    const code = buildLabelLookupCode(dataframe, column);
+
+    try {
+      const { result } = await positron.runtime.evaluateCode(
+        'r',
+        code,
+        cancellationToken,
+        session.metadata.sessionId,
+      );
+      return typeof result === 'string' ? result : undefined;
+    } catch (error) {
+      Logger.debug(`Haven label lookup for ${dataframe}$${column} failed`, error);
+      return undefined;
+    }
+  }
 }
+
+function buildLabelLookupCode(dataframe: string, column: string): string {
+  // Guarded end-to-end in R too (not just relying on the TS-side identifier
+  // check): a missing dataframe/column, a non-data-frame value, a missing
+  // `haven` package, or any other error all fall through to `NULL`, which
+  // `evaluateCode` reports back as a non-string `result` -- never an R-level
+  // error, so nothing is ever printed to the console.
+  return `
+(function() {
+  tryCatch({
+    if (!exists("${dataframe}")) return(NULL)
+    df <- get("${dataframe}")
+    if (!is.data.frame(df)) return(NULL)
+    if (!("${column}" %in% names(df))) return(NULL)
+    col <- df[["${column}"]]
+    if (!haven::is.labelled(col)) return(NULL)
+    label <- attr(col, "label", exact = TRUE)
+    if (is.null(label)) return(NULL)
+    as.character(label)
+  }, error = function(e) NULL)
+})()
+  `.trim();
 }
 
 const HavenLabels = new HavenLabelsProvider();

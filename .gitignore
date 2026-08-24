@@ -13,6 +13,9 @@ coverage/
 *.lcov
 .nyc_output
 .vscode-test/
+vitest.config.mjs
+vitest.config.mjs.map
+vitest.config.mts.timestamp-*
 
 # IDE
 .vscode/*
