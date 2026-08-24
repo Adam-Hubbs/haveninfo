@@ -29,6 +29,7 @@
  * name is actually a real column of the data is left to the R-execution
  * layer (`havenLabels.ts`) to guard against, not the extractor.
  */
+import { isValidRIdentifier } from "../utils/rIdentifier";
 
 export interface DataArgSpec {
   position?: number;
@@ -95,7 +96,14 @@ const TIDYR_DATA_FIRST = entry(
   { position: 0, argName: "data" },
 );
 
-const Y2CLERK = entry(["freqs"], { position: 0, argName: "df" });
+// All take their dataframe as the first (unnamed) argument, named `dataset`
+// when passed by name (verified against each function's actual signature,
+// e.g. `freqs(dataset, ...)`, not `df`/`data`). `freq` is a documented
+// alias of `freqs`.
+const Y2CLERK = entry(["freqs", "freq", "multi_freqs", "cross_freqs", "pivot_freqs"], {
+  position: 0,
+  argName: "dataset",
+});
 
 const BASE_R = [
   ...entry(["with", "within"], { position: 0, argName: "data" }),
@@ -140,9 +148,6 @@ export function createDataMaskingFunctionLookup(
   };
 }
 
-/** A plain R identifier, e.g. a function name or a named argument's name. */
-const R_IDENTIFIER = /^[.a-zA-Z][.a-zA-Z0-9_]*$/;
-
 /**
  * Validates a single entry of the user-facing `havenLabels.dataMaskingFunctions`
  * setting (arbitrary JSON from `settings.json`) into a {@link DataMaskingFunction}.
@@ -155,13 +160,13 @@ export function parseDataMaskingFunctionConfigEntry(value: unknown): DataMasking
   }
   const { name, position, argName } = value as Record<string, unknown>;
 
-  if (typeof name !== "string" || !R_IDENTIFIER.test(name)) {
+  if (typeof name !== "string" || !isValidRIdentifier(name)) {
     return undefined;
   }
   if (position !== undefined && !(typeof position === "number" && Number.isInteger(position) && position >= 0)) {
     return undefined;
   }
-  if (argName !== undefined && (typeof argName !== "string" || !R_IDENTIFIER.test(argName))) {
+  if (argName !== undefined && (typeof argName !== "string" || !isValidRIdentifier(argName))) {
     return undefined;
   }
 

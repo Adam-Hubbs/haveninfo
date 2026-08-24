@@ -55,24 +55,27 @@ suite('Extension Test Suite', () => {
 	/**
 	 * `@vscode/test-electron` runs against vanilla VS Code, which has no
 	 * `positron` module -- `tryAcquirePositronApi()` always returns
-	 * `undefined` here, so `HavenLabels` can never actually reach an R
-	 * session. These tests can therefore only confirm that the hover
-	 * pipeline (parse -> resolveReference -> HavenLabels -> Hover) wires
-	 * together and fails *gracefully* (resolves to no hover, never throws)
-	 * when there's no Positron/R session available -- not that a real haven
-	 * label appears. `resolveReference` itself has full coverage via the
-	 * `src/extractor/resolveReference.spec.ts` vitest fixtures. Verifying
-	 * that a real label actually shows up requires manually testing in a
-	 * live Positron window with an R session running a `haven`-labelled
-	 * data frame (see the "Run Extension" launch config).
+	 * `undefined` here, so `HavenLabels.lookupColumn` can never actually
+	 * reach an R session and always resolves to `{ kind: "none" }` (it has
+	 * no way to confirm the column/stem genuinely exists), which means no
+	 * hover at all -- even for an otherwise syntactically resolvable
+	 * reference, and even with `havenLabels.showRunFrequenciesLink` on.
+	 * These tests confirm that graceful wiring, not that a real haven label
+	 * (or a real "Run frequencies"/stem hover) appears. `resolveReference`
+	 * itself has full coverage via the `src/extractor/resolveReference.spec.ts`
+	 * vitest fixtures, and `renderHoverContent`'s exact/stem/none rendering
+	 * has full coverage via `src/providers/renderHoverContent.spec.ts`.
+	 * Verifying the full round trip (a real label, or a real stem match,
+	 * actually appearing) requires manually testing in a live Positron
+	 * window with an R session (see the "Run Extension" launch config).
 	 */
 	suite('hover provider (wired end-to-end, no Positron API available in this harness)', () => {
-		test('does not throw, and shows nothing, for an otherwise-resolvable reference', async () => {
+		test('shows nothing for an otherwise-resolvable reference (cannot confirm existence)', async () => {
 			const text = await hoverTextAt('df$col', 'col');
 			assert.strictEqual(text, undefined);
 		});
 
-		test('does not throw, and shows nothing, for a multi-stage pipe reference', async () => {
+		test('shows nothing for a multi-stage pipe reference (cannot confirm existence)', async () => {
 			const text = await hoverTextAt(
 				'df |> select(x, y) |> mutate(z = x) |> arrange(x)',
 				'x)',

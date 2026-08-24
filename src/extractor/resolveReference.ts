@@ -8,6 +8,27 @@ import {
 export interface ResolvedReference {
   dataframe: string;
   column: string;
+  /**
+   * Source text of the pipeline/call *up to, but not including*, the stage
+   * the cursor is in -- i.e. an expression representing the data as it
+   * existed right before this stage ran, suitable for piping into a
+   * further verb (e.g. `` `${expressionUpToHere} |> freqs(column)` ``).
+   *
+   * For a piped call, this is the `lhs` of the pipe feeding it (e.g.
+   * hovering `new_var` in
+   * `df |> mutate(new_var = x) |> select(new_var) |> arrange(new_var)`'s
+   * `select(...)` stage yields `"df |> mutate(new_var = x)"` -- the
+   * `select` stage itself is deliberately excluded). For a non-piped call,
+   * it's just the raw dataframe argument's text (e.g. `select(df, col)`
+   * yields `"df"`). Absent for direct `$`/`[[ ]]`/`[ ]` access, where
+   * there's no "pipeline point" to speak of.
+   *
+   * Note this means hovering a column at the exact stage that *creates*
+   * it (e.g. `new_var` in `mutate(new_var = x)` itself) yields an
+   * expression from *before* that column exists -- expected, since "the
+   * step before this one" for the first stage is just the bare dataframe.
+   */
+  expressionUpToHere?: string;
 }
 
 export interface ResolveReferenceOptions {
@@ -183,7 +204,10 @@ function resolveDataMaskingCall(
           isWithin(argumentsNode, leaf) &&
           !(excludedArgument && isWithin(excludedArgument, leaf))
         ) {
-          return { dataframe: dataframeNode.text, column: leaf.text };
+          const expressionUpToHere = isPipedCall(call)
+            ? call.parent!.childForFieldName("lhs")!.text
+            : dataframeNode.text;
+          return { dataframe: dataframeNode.text, column: leaf.text, expressionUpToHere };
         }
 
         // Nearest matching call didn't yield a result (e.g. leaf is the

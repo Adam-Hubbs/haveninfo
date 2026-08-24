@@ -97,6 +97,36 @@ export const FIXTURES: Fixture[] = [
     expected: { dataframe: "df", column: "col" },
   },
   {
+    description: "y2clerk::freq() (alias of freqs)",
+    source: `freq(df, col)`,
+    needle: "col",
+    expected: { dataframe: "df", column: "col" },
+  },
+  {
+    description: "y2clerk::multi_freqs()",
+    source: `multi_freqs(df, col)`,
+    needle: "col",
+    expected: { dataframe: "df", column: "col" },
+  },
+  {
+    description: "y2clerk::cross_freqs()",
+    source: `cross_freqs(df, col, group_col)`,
+    needle: "group_col",
+    expected: { dataframe: "df", column: "group_col" },
+  },
+  {
+    description: "y2clerk::pivot_freqs()",
+    source: `pivot_freqs(df, columns_var = mycol)`,
+    needle: "mycol",
+    expected: { dataframe: "df", column: "mycol" },
+  },
+  {
+    description: "y2clerk::freqs() resolved via dataset= named arg",
+    source: `freqs(dataset = df, col)`,
+    needle: "col",
+    expected: { dataframe: "df", column: "col" },
+  },
+  {
     description: "lm() with named data= and a formula",
     source: `lm(y ~ x, data = df)`,
     needle: "x",

@@ -2,7 +2,7 @@
 	"name": "r-haven-info",
 	"displayName": "Haven Info",
 	"description": "R Haven Labeled information on hover",
-	"version": "0.2.1",
+	"version": "0.2.4",
 	"publisher": "adam-hubbs",
 	"repository": {
 		"type": "git",
@@ -55,6 +55,13 @@
 		"web-tree-sitter": "0.26.13"
 	},
 	"contributes": {
+		"commands": [
+			{
+				"command": "havenLabels.runFrequencies",
+				"title": "Haven Labels: Run Frequencies at Cursor",
+				"category": "Haven Labels"
+			}
+		],
 		"configuration": {
 			"title": "Haven Info",
 			"properties": {
@@ -76,6 +83,12 @@
 					"minimum": 1,
 					"default": 10,
 					"description": "In \"full\" output mode, the maximum number of value labels to show before truncating (with a \"...and N more\" note). Has no effect in \"short\" mode."
+				},
+				"havenLabels.maxStemMatches": {
+					"type": "integer",
+					"minimum": 1,
+					"default": 15,
+					"description": "For a stem hover (a column name that isn't an exact match but matches one or more real columns via y2clerk::stem()), the maximum number of matched columns to list before truncating (with a \"...and N more\" note)."
 				},
 				"havenLabels.dataMaskingFunctions": {
 					"type": "array",
@@ -273,7 +286,27 @@
 						{
 							"name": "freqs",
 							"position": 0,
-							"argName": "df"
+							"argName": "dataset"
+						},
+						{
+							"name": "freq",
+							"position": 0,
+							"argName": "dataset"
+						},
+						{
+							"name": "multi_freqs",
+							"position": 0,
+							"argName": "dataset"
+						},
+						{
+							"name": "cross_freqs",
+							"position": 0,
+							"argName": "dataset"
+						},
+						{
+							"name": "pivot_freqs",
+							"position": 0,
+							"argName": "dataset"
 						},
 						{
 							"name": "with",
@@ -340,6 +373,11 @@
 							}
 						}
 					}
+				},
+				"havenLabels.showRunFrequenciesLink": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show a \"Run frequencies\" link on hover that runs y2clerk::freqs() visibly in the R console for the hovered column, at that point in the pipeline. Shown even for columns with no haven label."
 				},
 				"havenLabels.debug": {
 					"type": "boolean",
