@@ -1,10 +1,10 @@
 # Haven Info
 
 A Positron extension that shows [haven](https://haven.tidyverse.org/) variable
-labels on hover in R source files. Hover over a column reference like
-`df$age` or a bare column name inside a piped `dplyr`/`tidyr` call, and — if
-that column is `haven::labelled` in your running R session — its `label`
-attribute shows up as a tooltip.
+and value labels on hover in R source files. Hover over a column reference
+like `df$age` or a bare column name inside a piped `dplyr`/`tidyr` call, and —
+if that column is `haven::labelled` in your running R session — its metadata
+shows up as a tooltip.
 
 ## How it works
 
@@ -15,23 +15,40 @@ document text
 tree-sitter (web-tree-sitter + a vendored R grammar)
       │  parses the whole document into a real R AST
       ▼
-resolveReference(tree, offset)          src/extractor/
+resolveReference(tree, offset, options)          src/extractor/
       │  pure function: cursor offset -> { dataframe, column } | undefined
-      │  understands $ / [[ ]] / [ ] access, and a maintained registry of
+      │  understands $ / [[ ]] / [ ] access, and a registry of
       │  "data-masking" calls (dplyr, tidyr, y2clerk::freqs, with/subset,
-      │  lm/glm/aov, ggplot), including through arbitrarily long |>/%>% pipes
+      │  lm/glm/aov, ggplot by default -- see Settings below), including
+      │  through arbitrarily long |>/%>% pipes
       ▼
-HavenLabels.getDataFrameColumnLabel     src/providers/havenLabels.ts
+HavenLabels.getDataFrameColumnInfo     src/providers/havenLabels.ts
       │  silently evaluates a small, guarded R snippet in the user's own
       │  foreground R session (positron.runtime.evaluateCode) -- never
-      │  starts a session, never prints to the console, never throws
+      │  starts a session, never prints to the console, never throws.
+      │  Returns the variable `label` and/or the value-label map, if any.
       ▼
-vscode.Hover("Haven label: ...")
+renderHoverContent(info, options)      src/providers/renderHoverContent.ts
+      │  pure function: builds Markdown for "short" (label only) or "full"
+      │  (label + a value-labels table, truncated to a configurable count)
+      ▼
+vscode.Hover(markdown)
 ```
 
 See `src/ast/grammar/NOTES.md` for the tree-sitter node shapes the extractor
-relies on, and `src/extractor/dataMaskingFunctions.ts` for the exact list of
-supported R calls.
+relies on, and `src/extractor/dataMaskingFunctions.ts` for the built-in list
+of supported R calls (fully overridable -- see Settings).
+
+## Settings
+
+All under the `havenLabels.*` namespace (Settings UI: search "Haven Labels"):
+
+| Setting | Default | What it does |
+|---|---|---|
+| `havenLabels.outputMode` | `"short"` | `"short"` shows just the variable label. `"full"` also shows a table of value labels beneath it. |
+| `havenLabels.maxValueLabels` | `10` | In `"full"` mode, how many value labels to show before truncating with a "...and N more" note. |
+| `havenLabels.dataMaskingFunctions` | the built-in dplyr/tidyr/etc. list | The R functions treated as data-masking calls when resolving a column reference. **This setting fully replaces the built-in list, it does not merge with it** — copy the default from the Settings UI/`package.json` as a starting point if you just want to add one function. Each entry is `{ "name": "select", "position": 0, "argName": ".data" }`; `position`/`argName` are both optional and only matter for *non-piped* calls (`select(df, x)`) — a function with neither is still recognized when piped (`df \|> select(x)`). |
+| `havenLabels.debug` | `false` | Logs verbose diagnostics (including why a hover lookup silently failed) to the "Haven Labels" output channel. |
 
 ### Known scope limits
 
@@ -42,8 +59,9 @@ expression. In particular:
 - A dataframe expression that isn't a simple identifier (e.g.
   `(df1 |> left_join(df2))$col`, or aliasing through an intermediate
   variable in an earlier statement) isn't resolved.
-- Only calls in the registry in `dataMaskingFunctions.ts` are recognized —
-  this is a fixed, maintained allow-list, not an open-ended heuristic.
+- Only calls in the `havenLabels.dataMaskingFunctions` registry are
+  recognized — a maintained (and user-configurable) allow-list, not an
+  open-ended "any call with a dataframe-looking first arg" heuristic.
 - A column that doesn't actually exist on the resolved dataframe (e.g. `z`
   in `df |> mutate(z = x)`) is still *offered* for lookup; whether a label
   is actually shown is left entirely to the R-side query in

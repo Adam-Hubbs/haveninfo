@@ -2,7 +2,7 @@
 	"name": "r-haven-info",
 	"displayName": "Haven Info",
 	"description": "R Haven Labeled information on hover",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"publisher": "adam-hubbs",
 	"repository": {
 		"type": "git",
@@ -53,5 +53,300 @@
 	"dependencies": {
 		"@posit-dev/positron": "^0.2.8",
 		"web-tree-sitter": "0.26.13"
+	},
+	"contributes": {
+		"configuration": {
+			"title": "Haven Info",
+			"properties": {
+				"havenLabels.outputMode": {
+					"type": "string",
+					"enum": [
+						"short",
+						"full"
+					],
+					"enumDescriptions": [
+						"Show just the haven variable label.",
+						"Show the variable label followed by a table of value labels (see havenLabels.maxValueLabels)."
+					],
+					"default": "short",
+					"description": "How much haven metadata to show on hover."
+				},
+				"havenLabels.maxValueLabels": {
+					"type": "integer",
+					"minimum": 1,
+					"default": 10,
+					"description": "In \"full\" output mode, the maximum number of value labels to show before truncating (with a \"...and N more\" note). Has no effect in \"short\" mode."
+				},
+				"havenLabels.dataMaskingFunctions": {
+					"type": "array",
+					"default": [
+						{
+							"name": "select",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "rename",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "relocate",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "rename_with",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "filter",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "mutate",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "transmute",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "summarise",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "summarize",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "arrange",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "distinct",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "group_by",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "rowwise",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "pull",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "slice",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "slice_head",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "slice_tail",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "slice_sample",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "slice_min",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "slice_max",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "with_groups",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "count",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "tally",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "add_count",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "add_tally",
+							"position": 0,
+							"argName": ".data"
+						},
+						{
+							"name": "pivot_longer",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "pivot_wider",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "drop_na",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "fill",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "expand",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "complete",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "nest",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "unite",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "separate",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "separate_rows",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "extract",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "unnest",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "replace_na",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "freqs",
+							"position": 0,
+							"argName": "df"
+						},
+						{
+							"name": "with",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "within",
+							"position": 0,
+							"argName": "data"
+						},
+						{
+							"name": "subset",
+							"position": 0,
+							"argName": "x"
+						},
+						{
+							"name": "transform",
+							"position": 0,
+							"argName": "_data"
+						},
+						{
+							"name": "aggregate",
+							"argName": "data"
+						},
+						{
+							"name": "lm",
+							"argName": "data"
+						},
+						{
+							"name": "glm",
+							"argName": "data"
+						},
+						{
+							"name": "aov",
+							"argName": "data"
+						},
+						{
+							"name": "ggplot",
+							"position": 0,
+							"argName": "data"
+						}
+					],
+					"description": "R functions treated as \"data-masking\" calls when resolving column references under the cursor (e.g. dplyr/tidyr verbs whose bare arguments refer to columns of a dataframe argument). This setting fully replaces the extension's built-in list -- edit freely to add, remove, or adjust entries; it is not merged with any defaults.",
+					"items": {
+						"type": "object",
+						"required": [
+							"name"
+						],
+						"additionalProperties": false,
+						"properties": {
+							"name": {
+								"type": "string",
+								"description": "Unqualified R function name, e.g. \"select\" (also matches namespace-qualified calls like dplyr::select)."
+							},
+							"position": {
+								"type": "integer",
+								"minimum": 0,
+								"description": "0-based index of the dataframe argument among the call's unnamed arguments, used to resolve non-piped calls like select(df, x). Omit for functions that should only be recognized when piped, e.g. df |> select(x)."
+							},
+							"argName": {
+								"type": "string",
+								"description": "Name of the dataframe argument when passed by name, e.g. \"data\" or \".data\", used to resolve non-piped calls like select(data = df, x). Omit if the function has no sensible named form."
+							}
+						}
+					}
+				},
+				"havenLabels.debug": {
+					"type": "boolean",
+					"default": false,
+					"description": "Log verbose debug information (including why a hover lookup silently failed) to the \"Haven Labels\" output channel."
+				}
+			}
+		}
 	}
 }

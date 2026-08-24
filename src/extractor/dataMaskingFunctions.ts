@@ -1,21 +1,26 @@
 /**
- * Fixed, maintained registry of "data-masking" R calls: functions where a
- * bare identifier inside the call plausibly refers to a column of a
- * dataframe argument to that same call (as opposed to an ordinary variable).
+ * Registry of "data-masking" R calls: functions where a bare identifier
+ * inside the call plausibly refers to a column of a dataframe argument to
+ * that same call (as opposed to an ordinary variable).
  *
- * This is intentionally a curated allow-list, not an open-ended "any call
- * whose first argument looks like a dataframe" heuristic -- see the plan doc
- * for rationale. Extend this table as new verbs come up; don't special-case
- * individual functions in the extractor itself.
+ * {@link DEFAULT_DATA_MASKING_FUNCTIONS} is a curated allow-list (dplyr,
+ * tidyr, `y2clerk::freqs`, base R, model-fitting, ggplot2) -- but it's not
+ * hardcoded into the extractor. It's entirely user-configurable via the
+ * `havenLabels.dataMaskingFunctions` setting (see `package.json`'s
+ * `contributes.configuration`, whose default mirrors this array -- keep
+ * them in sync; `dataMaskingFunctions.settings-sync.spec.ts` catches drift).
+ * The setting *replaces* this list wholesale, not merges with it, so users
+ * can add, remove, or adjust entries freely.
  *
  * `dataArg` describes how to find the dataframe argument for a *non-piped*
  * call (e.g. `select(df, x)`, as opposed to `df |> select(x)` where the
  * pipeline supplies the dataframe implicitly -- see `resolveReference.ts`):
  *   - `position`: 0-based index among the call's arguments, matched only
  *     against arguments that aren't otherwise named.
- *   - `name`: matched against a named argument (`data = df`, `.data = df`).
- * At least one of `position`/`name` must be set; both may be set when a
- * function accepts the dataframe either way (the common case).
+ *   - `argName`: matched against a named argument (`data = df`, `.data = df`).
+ * Both are optional: a function registered with neither is still
+ * recognized (and resolvable when piped), just never resolvable as a
+ * standalone non-piped call.
  *
  * We deliberately do NOT distinguish "column being created" (e.g. the `z` in
  * `mutate(z = x)`) from "column being referenced" (`x`) -- any identifier
@@ -27,7 +32,7 @@
 
 export interface DataArgSpec {
   position?: number;
-  name?: string;
+  argName?: string;
 }
 
 export interface DataMaskingFunction {
@@ -68,7 +73,7 @@ const DPLYR_DATA_FIRST = entry(
     "add_count",
     "add_tally",
   ],
-  { position: 0, name: ".data" },
+  { position: 0, argName: ".data" },
 );
 
 const TIDYR_DATA_FIRST = entry(
@@ -87,30 +92,30 @@ const TIDYR_DATA_FIRST = entry(
     "unnest",
     "replace_na",
   ],
-  { position: 0, name: "data" },
+  { position: 0, argName: "data" },
 );
 
-const Y2CLERK = entry(["freqs"], { position: 0, name: "df" });
+const Y2CLERK = entry(["freqs"], { position: 0, argName: "df" });
 
 const BASE_R = [
-  ...entry(["with", "within"], { position: 0, name: "data" }),
-  ...entry(["subset"], { position: 0, name: "x" }),
-  ...entry(["transform"], { position: 0, name: "_data" }),
+  ...entry(["with", "within"], { position: 0, argName: "data" }),
+  ...entry(["subset"], { position: 0, argName: "x" }),
+  ...entry(["transform"], { position: 0, argName: "_data" }),
   // `aggregate`'s formula method takes `data` as its 2nd argument, but its
   // list method takes the data as its 1st (unnamed) argument -- we only
   // support the common `aggregate(y ~ x, data = df)` form (named `data`);
   // the positional list-method form is a known scope gap.
-  ...entry(["aggregate"], { name: "data" }),
+  ...entry(["aggregate"], { argName: "data" }),
 ];
 
 // No sane positional default: `lm(formula, data, ...)` technically allows
 // `data` positionally, but disambiguating it from other positional args
 // (subset, weights, ...) isn't worth it -- require `data =` explicitly.
-const MODEL_FITTING = entry(["lm", "glm", "aov"], { name: "data" });
+const MODEL_FITTING = entry(["lm", "glm", "aov"], { argName: "data" });
 
-const GGPLOT = entry(["ggplot"], { position: 0, name: "data" });
+const GGPLOT = entry(["ggplot"], { position: 0, argName: "data" });
 
-export const DATA_MASKING_FUNCTIONS: readonly DataMaskingFunction[] = [
+export const DEFAULT_DATA_MASKING_FUNCTIONS: readonly DataMaskingFunction[] = [
   ...DPLYR_DATA_FIRST,
   ...TIDYR_DATA_FIRST,
   ...Y2CLERK,
@@ -119,16 +124,77 @@ export const DATA_MASKING_FUNCTIONS: readonly DataMaskingFunction[] = [
   ...GGPLOT,
 ];
 
-const REGISTRY_BY_NAME: ReadonlyMap<string, DataArgSpec> = new Map(
-  DATA_MASKING_FUNCTIONS.map((fn) => [fn.name, fn.dataArg]),
-);
+/**
+ * Builds a name -> data-arg-spec lookup from a list of data-masking
+ * functions, matched by unqualified name (a leading `pkg::`/`pkg:::`
+ * namespace qualifier is stripped before matching, so `dplyr::select(...)`
+ * matches an entry named `select`). Later entries win on name collisions.
+ */
+export function createDataMaskingFunctionLookup(
+  functions: readonly DataMaskingFunction[],
+): (functionName: string) => DataArgSpec | undefined {
+  const byName = new Map<string, DataArgSpec>(functions.map((fn) => [fn.name, fn.dataArg]));
+  return (functionName: string) => {
+    const unqualified = functionName.replace(/^[.A-Za-z][.A-Za-z0-9]*:::?/, "");
+    return byName.get(unqualified);
+  };
+}
+
+/** A plain R identifier, e.g. a function name or a named argument's name. */
+const R_IDENTIFIER = /^[.a-zA-Z][.a-zA-Z0-9_]*$/;
 
 /**
- * Looks up a call's data-arg spec by its (unqualified) function name.
- * Strips a leading `pkg::`/`pkg:::` namespace qualifier before matching, so
- * `dplyr::select(...)` matches the same entry as `select(...)`.
+ * Validates a single entry of the user-facing `havenLabels.dataMaskingFunctions`
+ * setting (arbitrary JSON from `settings.json`) into a {@link DataMaskingFunction}.
+ * Returns `undefined` -- rather than throwing -- for anything malformed, so
+ * one bad entry doesn't break the whole list.
  */
-export function lookupDataMaskingFunction(functionName: string): DataArgSpec | undefined {
-  const unqualified = functionName.replace(/^[.A-Za-z][.A-Za-z0-9]*:::?/, "");
-  return REGISTRY_BY_NAME.get(unqualified);
+export function parseDataMaskingFunctionConfigEntry(value: unknown): DataMaskingFunction | undefined {
+  if (typeof value !== "object" || value === null) {
+    return undefined;
+  }
+  const { name, position, argName } = value as Record<string, unknown>;
+
+  if (typeof name !== "string" || !R_IDENTIFIER.test(name)) {
+    return undefined;
+  }
+  if (position !== undefined && !(typeof position === "number" && Number.isInteger(position) && position >= 0)) {
+    return undefined;
+  }
+  if (argName !== undefined && (typeof argName !== "string" || !R_IDENTIFIER.test(argName))) {
+    return undefined;
+  }
+
+  const dataArg: DataArgSpec = {};
+  if (typeof position === "number") {
+    dataArg.position = position;
+  }
+  if (typeof argName === "string") {
+    dataArg.argName = argName;
+  }
+  return { name, dataArg };
+}
+
+/**
+ * Validates the whole `havenLabels.dataMaskingFunctions` setting value.
+ * Malformed entries are dropped (not fatal); `onInvalidEntry` is called for
+ * each one so the caller can log a warning.
+ */
+export function parseDataMaskingFunctionsConfig(
+  value: unknown,
+  onInvalidEntry?: (entry: unknown, index: number) => void,
+): DataMaskingFunction[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  const result: DataMaskingFunction[] = [];
+  value.forEach((entry, index) => {
+    const parsed = parseDataMaskingFunctionConfigEntry(entry);
+    if (parsed) {
+      result.push(parsed);
+    } else {
+      onInvalidEntry?.(entry, index);
+    }
+  });
+  return result;
 }

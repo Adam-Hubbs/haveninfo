@@ -1,9 +1,23 @@
 import type { Node, Tree } from "web-tree-sitter";
-import { lookupDataMaskingFunction } from "./dataMaskingFunctions";
+import {
+  createDataMaskingFunctionLookup,
+  DEFAULT_DATA_MASKING_FUNCTIONS,
+  type DataMaskingFunction,
+} from "./dataMaskingFunctions";
 
 export interface ResolvedReference {
   dataframe: string;
   column: string;
+}
+
+export interface ResolveReferenceOptions {
+  /**
+   * Data-masking function registry to use, replacing
+   * {@link DEFAULT_DATA_MASKING_FUNCTIONS} entirely (not merged) when
+   * provided -- mirrors the user-configurable `havenLabels.dataMaskingFunctions`
+   * setting.
+   */
+  dataMaskingFunctions?: readonly DataMaskingFunction[];
 }
 
 /**
@@ -39,7 +53,11 @@ export interface ResolvedReference {
  * dataframe. Whether `z` actually exists as a column is left to the
  * R-execution layer to guard against.
  */
-export function resolveReference(tree: Tree, offset: number): ResolvedReference | undefined {
+export function resolveReference(
+  tree: Tree,
+  offset: number,
+  options: ResolveReferenceOptions = {},
+): ResolvedReference | undefined {
   const leaf = tree.rootNode.descendantForIndex(offset, offset + 1);
   if (!leaf) {
     return undefined;
@@ -63,7 +81,10 @@ export function resolveReference(tree: Tree, offset: number): ResolvedReference 
     return undefined;
   }
 
-  return resolveDataMaskingCall(leaf);
+  const lookupDataMaskingFunction = createDataMaskingFunctionLookup(
+    options.dataMaskingFunctions ?? DEFAULT_DATA_MASKING_FUNCTIONS,
+  );
+  return resolveDataMaskingCall(leaf, lookupDataMaskingFunction);
 }
 
 /** Sentinel distinguishing "not this kind of node" from "recognized, but no result". */
@@ -138,7 +159,10 @@ function resolveBracketAccess(leaf: Node): MaybeResolved {
   return undefined;
 }
 
-function resolveDataMaskingCall(leaf: Node): ResolvedReference | undefined {
+function resolveDataMaskingCall(
+  leaf: Node,
+  lookupDataMaskingFunction: (functionName: string) => { position?: number; argName?: string } | undefined,
+): ResolvedReference | undefined {
   let call = findAncestor(leaf, "call");
   while (call) {
     const functionNode = call.childForFieldName("function");
@@ -178,14 +202,14 @@ function resolveDataMaskingCall(leaf: Node): ResolvedReference | undefined {
 
 function findExplicitDataArgument(
   argumentsNode: Node,
-  spec: { position?: number; name?: string },
+  spec: { position?: number; argName?: string },
 ): { identifier: Node; argument: Node } | undefined {
   const argumentNodes = namedChildrenOfType(argumentsNode, "argument");
 
-  if (spec.name) {
+  if (spec.argName) {
     for (const argument of argumentNodes) {
       const name = argument.childForFieldName("name");
-      if (name && name.text === spec.name) {
+      if (name && name.text === spec.argName) {
         const value = argument.childForFieldName("value");
         if (value && value.type === "identifier") {
           return { identifier: value, argument };
