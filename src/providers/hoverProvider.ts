@@ -9,7 +9,7 @@ const DEFAULT_MAX_STEM_MATCHES = 15;
 
 /**
  * Registers the R hover provider: resolves dataframe/column references via
- * the tree-sitter extractor (using the user-configurable
+ * the Air-parser-based extractor (using the user-configurable
  * `havenLabels.dataMaskingFunctions` registry, see `resolveReferenceAt.ts`),
  * then asks `HavenLabels.lookupColumn` what the reference actually is --
  * an exact column (with haven metadata, if any), a stem match (see
@@ -21,15 +21,13 @@ const DEFAULT_MAX_STEM_MATCHES = 15;
  * `isTrusted` is scoped to allow only {@link SHOW_ALL_VALUE_LABELS_COMMAND}
  * and {@link RUN_FREQUENCIES_COMMAND}, not arbitrary commands.
  *
- * NOTE: parses the whole document text on every hover request. Caching a
- * per-document `Tree` and incrementally re-parsing on edits (per the target
- * architecture) is a follow-up optimization, not required for this
- * milestone.
+ * The document's parse is cached until it's edited (see
+ * `resolveReferenceAt.ts`), so repeated hovers don't reparse.
  */
 export function registerHoverProvider(): vscode.Disposable {
   return vscode.languages.registerHoverProvider("r", {
     async provideHover(document, position, token) {
-      const resolved = await resolveReferenceAt(document, position);
+      const resolved = resolveReferenceAt(document, position);
       if (!resolved) {
         return undefined;
       }

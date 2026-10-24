@@ -1,29 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  createDataMaskingFunctionLookup,
-  DEFAULT_DATA_MASKING_FUNCTIONS,
   parseDataMaskingFunctionConfigEntry,
   parseDataMaskingFunctionsConfig,
 } from "./dataMaskingFunctions";
-
-describe("createDataMaskingFunctionLookup", () => {
-  it("matches by unqualified name", () => {
-    const lookup = createDataMaskingFunctionLookup(DEFAULT_DATA_MASKING_FUNCTIONS);
-    expect(lookup("select")).toEqual({ position: 0, argName: ".data" });
-    expect(lookup("dplyr::select")).toEqual({ position: 0, argName: ".data" });
-  });
-
-  it("returns undefined for functions outside the provided list", () => {
-    const lookup = createDataMaskingFunctionLookup([]);
-    expect(lookup("select")).toBeUndefined();
-  });
-
-  it("supports an entirely custom registry", () => {
-    const lookup = createDataMaskingFunctionLookup([{ name: "my_verb", dataArg: { position: 1 } }]);
-    expect(lookup("my_verb")).toEqual({ position: 1 });
-    expect(lookup("select")).toBeUndefined();
-  });
-});
 
 describe("parseDataMaskingFunctionConfigEntry", () => {
   it("accepts a well-formed entry", () => {

@@ -1,4 +1,4 @@
-# Only `out/` (compiled JS + the vendored grammar wasm) and the two real
+# Only `out/` (compiled JS + the vendored Air resolver wasm) and the real
 # runtime `dependencies` (see package.json) need to ship in the .vsix.
 # Everything else here is source, dev tooling, or test-only.
 
@@ -10,17 +10,13 @@ eslint.config.mjs
 tsconfig.json
 vitest.config.mts
 scripts/**
+air-resolver/**
 src/**
 out/test/**
 out/**/*.map
 package-lock.json
 *.vsix
 
-# web-tree-sitter ships a second full copy of its wasm/js under debug/ for
-# an explicit `web-tree-sitter/debug` import subpath we never use (we always
-# get the production build via the default `require("web-tree-sitter")`
-# resolution) -- and source maps for a bundled library aren't useful in an
-# installed extension. Together these roughly halve the packaged size.
-node_modules/web-tree-sitter/debug/**
+# Source maps for bundled libraries aren't useful in an installed extension.
 node_modules/**/*.map
 

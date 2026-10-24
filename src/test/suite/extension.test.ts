@@ -1,5 +1,6 @@
 import * as assert from 'assert';
 import * as vscode from 'vscode';
+import { resolveReferenceAt } from '../../providers/resolveReferenceAt';
 
 const EXTENSION_ID = 'adam-hubbs.r-haven-info';
 
@@ -92,6 +93,19 @@ suite('Extension Test Suite', () => {
 		test('shows nothing for a call outside the data-masking registry', async () => {
 			const text = await hoverTextAt('do.call(select, list(df, col))', 'col');
 			assert.strictEqual(text, undefined);
+		});
+	});
+
+	suite('resolveReferenceAt parse cache', () => {
+		test('re-resolves against the new text after an edit', async () => {
+			const document = await vscode.workspace.openTextDocument({ language: 'r', content: 'df$col' });
+			assert.deepStrictEqual(resolveReferenceAt(document, document.positionAt(3)), { dataframe: 'df', column: 'col' });
+
+			const edit = new vscode.WorkspaceEdit();
+			edit.replace(document.uri, new vscode.Range(document.positionAt(0), document.positionAt(2)), 'other');
+			assert.ok(await vscode.workspace.applyEdit(edit));
+
+			assert.deepStrictEqual(resolveReferenceAt(document, document.positionAt(6)), { dataframe: 'other', column: 'col' });
 		});
 	});
 });

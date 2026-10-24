@@ -2,7 +2,7 @@
 	"name": "r-haven-info",
 	"displayName": "Haven Info",
 	"description": "R Haven Labeled information on hover",
-	"version": "0.2.4",
+	"version": "0.3.0",
 	"publisher": "adam-hubbs",
 	"repository": {
 		"type": "git",
@@ -28,16 +28,14 @@
 		"pretest": "npm run compile && npm run lint",
 		"test": "vscode-test",
 		"test:unit": "vitest run",
-		"sync-grammar": "node scripts/sync-grammar.js",
+		"build-parser": "node scripts/build-parser.js",
 		"package": "vsce package"
 	},
 	"devDependencies": {
-		"@davisvaughan/tree-sitter-r": "1.3.0",
 		"@eslint/js": "^10.0.1",
 		"@stylistic/eslint-plugin": "^5.10.0",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^22.20.1",
-		"@types/sinon": "^22.0.0",
 		"@types/vscode": "^1.104.0",
 		"@vscode/test-cli": "^0.0.15",
 		"@vscode/test-electron": "^3.1.0",
@@ -45,14 +43,12 @@
 		"eslint": "^10.9.0",
 		"glob": "^13.0.6",
 		"mocha": "^11.8.0",
-		"sinon": "^22.1.0",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.68.0",
 		"vitest": "^4.1.11"
 	},
 	"dependencies": {
-		"@posit-dev/positron": "^0.2.8",
-		"web-tree-sitter": "0.26.13"
+		"@posit-dev/positron": "^0.2.8"
 	},
 	"contributes": {
 		"commands": [

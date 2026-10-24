@@ -102,7 +102,7 @@ async function resolveTargetAtActiveCursor(): Promise<RunFrequenciesTarget | und
     return undefined;
   }
 
-  const resolved = await resolveReferenceAt(editor.document, editor.selection.active);
+  const resolved = resolveReferenceAt(editor.document, editor.selection.active);
   if (!resolved) {
     return undefined;
   }

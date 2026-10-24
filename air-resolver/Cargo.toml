@@ -1,0 +1,24 @@
+[package]
+name = "air_resolver"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Column-reference resolver for the Haven Info extension, built on Air's R parser and compiled to WebAssembly"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Pinned to the commit that landed posit-dev/air#548 (Aether's Pratt parser).
+air_r_parser = { git = "https://github.com/posit-dev/air", rev = "79cc4d0" }
+air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "79cc4d0" }
+# Must match the biome revision Air's workspace pins, so the rowan types unify.
+biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
+js-sys = "0.3"
+wasm-bindgen = "0.2"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"

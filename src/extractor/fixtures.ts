@@ -1,6 +1,6 @@
 /**
  * R snippets + expected `resolveReference` results, used by
- * `resolveReference.test.ts`. Each fixture gives a source snippet and the
+ * `resolveReference.spec.ts`. Each fixture gives a source snippet and the
  * substring to hover (the first match of `needle` in `source` is used to
  * compute the cursor offset passed to `resolveReference`).
  *
@@ -21,7 +21,7 @@ export interface Fixture {
 }
 
 export const FIXTURES: Fixture[] = [
-  // --- Direct access (today's regex-parser baseline) ---
+  // --- Direct access ---
   {
     description: "$ access",
     source: `df$col`,
@@ -43,6 +43,18 @@ export const FIXTURES: Fixture[] = [
   {
     description: "[ ] access with a quoted column name",
     source: `df["col"]`,
+    needle: "col",
+    expected: { dataframe: "df", column: "col" },
+  },
+  {
+    description: "[[ ]] access with a raw string column name",
+    source: `df[[r"(col)"]]`,
+    needle: "col",
+    expected: { dataframe: "df", column: "col" },
+  },
+  {
+    description: "$ access after non-ASCII text (UTF-16 offsets)",
+    source: `x <- "é😀"; df$col`,
     needle: "col",
     expected: { dataframe: "df", column: "col" },
   },

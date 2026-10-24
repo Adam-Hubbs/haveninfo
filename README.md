@@ -12,11 +12,11 @@ shows up as a tooltip.
 document text
       │
       ▼
-tree-sitter (web-tree-sitter + a vendored R grammar)
-      │  parses the whole document into a real R AST
-      ▼
-resolveReference(tree, offset, options)          src/extractor/
+resolveReference(source, offset, options)        src/extractor/
       │  pure function: cursor offset -> { dataframe, column } | undefined
+      │  parses the whole document with Air's R parser (Rust, compiled to
+      │  WebAssembly -- see air-resolver/) and walks its syntax tree; the
+      │  parse is cached per document version, so only edits reparse
       │  understands $ / [[ ]] / [ ] access, and a registry of
       │  "data-masking" calls (dplyr, tidyr, y2clerk::freqs, with/subset,
       │  lm/glm/aov, ggplot by default -- see Settings below), including
@@ -35,9 +35,9 @@ renderHoverContent(info, options)      src/providers/renderHoverContent.ts
 vscode.Hover(markdown)
 ```
 
-See `src/ast/grammar/NOTES.md` for the tree-sitter node shapes the extractor
-relies on, and `src/extractor/dataMaskingFunctions.ts` for the built-in list
-of supported R calls (fully overridable -- see Settings).
+See `air-resolver/src/resolve.rs` for the resolver itself, and
+`src/extractor/dataMaskingFunctions.ts` for the built-in list of supported R
+calls (fully overridable -- see Settings).
 
 ## Settings
 
@@ -81,12 +81,12 @@ npm install
 
 | Script | What it does |
 |---|---|
-| `npm run compile` | `tsc` + copies the vendored grammar wasm into `out/` |
-| `npm run watch` | `tsc -watch` (does **not** re-copy the wasm -- rerun `compile` after touching the grammar) |
+| `npm run compile` | `tsc` + copies the vendored Air resolver wasm and its JS glue into `out/` |
+| `npm run watch` | `tsc -watch` (does **not** re-copy the wasm -- rerun `compile` after rebuilding the parser) |
 | `npm run lint` | ESLint |
 | `npm run test:unit` | Fast, plain-Node `vitest` tests for the pure extractor (`src/extractor/*.spec.ts`) |
 | `npm test` | Full `vscode-test`/Mocha integration suite in a real Extension Development Host (`src/test/**/*.test.ts`) |
-| `npm run sync-grammar` | Re-copies `tree-sitter-r.wasm` from the pinned `@davisvaughan/tree-sitter-r` npm package after bumping its version |
+| `npm run build-parser` | Rebuilds `air-resolver/` to WebAssembly into `src/ast/air/` (needs Rust + `wasm-pack`) |
 
 Unit tests (`*.spec.ts`, vitest) and integration tests (`*.test.ts`, Mocha)
 are intentionally named differently so `tsc`/`vitest` each pick up only the
@@ -105,15 +105,19 @@ Note: `vscode-test`'s integration harness runs vanilla VS Code, which has no
 no R session is reachable, not that a real label renders. Manually testing
 in Positron (above) is the only way to confirm the full round trip.
 
-### Updating the grammar
+### Updating the parser
 
-The R grammar is vendored from the `@davisvaughan/tree-sitter-r` npm
-package (pinned to an exact version in `package.json`) rather than built
-locally -- see `src/ast/grammar/NOTES.md`. To bump it:
+Parsing and reference resolution live in the Rust crate `air-resolver/`,
+built on [Air](https://github.com/posit-dev/air)'s `air_r_parser` (pinned to
+a git revision in `air-resolver/Cargo.toml`). The compiled output in
+`src/ast/air/` is committed, so only changes to the crate need a Rust
+toolchain. To rebuild or bump Air:
 
 ```bash
-npm install @davisvaughan/tree-sitter-r@<new-version> --save-dev --save-exact
-npm run sync-grammar
+rustup target add wasm32-unknown-unknown   # once
+cargo install wasm-pack                    # once
+# edit the `rev` of air_r_parser/air_r_syntax in air-resolver/Cargo.toml
+npm run build-parser
 npm run test:unit
 ```
 
@@ -123,10 +127,10 @@ npm run test:unit
 npx vsce package
 ```
 
-`.vscodeignore` trims the package down to the compiled `out/` tree, the
-vendored grammar wasm, and the two runtime `dependencies`
-(`@posit-dev/positron`, `web-tree-sitter`) -- no dev tooling, no source
-`.ts` files, no test files.
+`.vscodeignore` trims the package down to the compiled `out/` tree
+(including the Air resolver wasm) and the runtime `dependencies`
+(`@posit-dev/positron`) -- no dev tooling, no Rust or `.ts` source, no test
+files.
 
 ## License
 

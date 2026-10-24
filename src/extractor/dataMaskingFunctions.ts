@@ -133,22 +133,6 @@ export const DEFAULT_DATA_MASKING_FUNCTIONS: readonly DataMaskingFunction[] = [
 ];
 
 /**
- * Builds a name -> data-arg-spec lookup from a list of data-masking
- * functions, matched by unqualified name (a leading `pkg::`/`pkg:::`
- * namespace qualifier is stripped before matching, so `dplyr::select(...)`
- * matches an entry named `select`). Later entries win on name collisions.
- */
-export function createDataMaskingFunctionLookup(
-  functions: readonly DataMaskingFunction[],
-): (functionName: string) => DataArgSpec | undefined {
-  const byName = new Map<string, DataArgSpec>(functions.map((fn) => [fn.name, fn.dataArg]));
-  return (functionName: string) => {
-    const unqualified = functionName.replace(/^[.A-Za-z][.A-Za-z0-9]*:::?/, "");
-    return byName.get(unqualified);
-  };
-}
-
-/**
  * Validates a single entry of the user-facing `havenLabels.dataMaskingFunctions`
  * setting (arbitrary JSON from `settings.json`) into a {@link DataMaskingFunction}.
  * Returns `undefined` -- rather than throwing -- for anything malformed, so
