@@ -32,7 +32,7 @@ export interface ValueLabel {
  *    `tidyselect` dependency) are installed; otherwise this degrades
  *    gracefully to `"none"` rather than erroring -- there is no
  *    interruptive prompt from the passive hover path (contrast
- *    `y2clerkAvailability.ts`'s prompt, used for the explicit "Run
+ *    `rPackageAvailability.ts`'s prompt, used for the explicit "Run
  *    frequencies" action instead).
  *  - `"none"`: neither -- callers should show no hover at all.
  */

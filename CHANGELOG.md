@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- New `havenLabels.frequencyFunction` setting chooses which function "Run frequencies" calls: `y2clerk::freqs` (default), `freq2::freqs`, or a custom function set in `havenLabels.customFrequencyFunction`.
+
 ## 0.3.0
 
 - Replaced the tree-sitter R parser with [Air](https://github.com/posit-dev/air)'s Rust parser, compiled to WebAssembly. Parsing is roughly 5-8x faster and the packaged extension is smaller.

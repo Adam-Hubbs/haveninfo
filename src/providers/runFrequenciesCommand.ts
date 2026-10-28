@@ -3,8 +3,9 @@ import { tryAcquirePositronApi } from '@posit-dev/positron';
 import { isValidRIdentifier } from '../utils/rIdentifier';
 import { Logger } from '../utils/logger';
 import { RUN_FREQUENCIES_COMMAND } from './commandIds';
-import { resolveReferenceAt } from './resolveReferenceAt';
-import { isY2clerkAvailable, promptToLoadY2clerk } from './y2clerkAvailability';
+import { CONFIG_SECTION, resolveReferenceAt } from './resolveReferenceAt';
+import { isRPackageAvailable, promptToLoadRPackage } from './rPackageAvailability';
+import { buildFrequenciesCode, resolveFrequencyFunction, type FrequencyFunction } from './frequencyFunction';
 import HavenLabels from './havenLabels';
 
 /** Matches exactly the stem-selector expressions we ourselves generate, e.g. `y2clerk::stem("Q1")`. */
@@ -18,9 +19,11 @@ interface RunFrequenciesTarget {
 }
 
 /**
- * Registers the "run frequencies" command: runs `y2clerk::freqs()`
- * *visibly* in the user's R console, either on a single column or (for a
- * stem match) across the whole matched set via `y2clerk::freqs(y2clerk::stem(...))`.
+ * Registers the "run frequencies" command: runs the configured frequency
+ * function (`havenLabels.frequencyFunction`, `y2clerk::freqs()` by default --
+ * see `frequencyFunction.ts`) *visibly* in the user's R console, either on a
+ * single column or (for a stem match) across the whole matched set via
+ * `freqs(y2clerk::stem(...))`.
  * Declared as a first-class command in `package.json` (not just invoked
  * via a hover link), so it can be bound to a keyboard shortcut or run from
  * the Command Palette.
@@ -40,13 +43,15 @@ interface RunFrequenciesTarget {
  * not including*, the stage the cursor is in (see `resolveReference.ts`),
  * so this runs frequencies "as of" right before that stage, not the
  * pipeline's final result. Only direct `$`/`[[ ]]`/`[ ]` access, with no
- * pipeline point at all, falls back to `y2clerk::freqs(dataframe, selector)`.
+ * pipeline point at all, falls back to `freqs(dataframe, selector)`.
  *
- * `y2clerk` is required for both the exact and stem cases. Since this is
- * an explicit, user-initiated action (unlike the passive hover lookup,
- * which just degrades silently), a missing `y2clerk` gets a proactive
- * notification offering to load it (`y2clerkAvailability.ts`) instead of
- * just letting a "could not find function" error appear.
+ * When the frequency function is namespace-qualified, its package is
+ * required. Since this is an explicit, user-initiated action (unlike the
+ * passive hover lookup, which just degrades silently), a missing package
+ * gets a proactive notification offering to load it
+ * (`rPackageAvailability.ts`) instead of just letting a "there is no
+ * package" error appear. A bare custom function name isn't checked -- if
+ * it doesn't exist, R's own error surfaces in the console.
  *
  * Deliberately visible, not silent (`focus: true` via `executeCode`, not
  * `evaluateCode`): fine here -- unlike the hover lookup -- to auto-start an
@@ -73,8 +78,13 @@ export function registerRunFrequenciesCommand(): vscode.Disposable {
         return;
       }
 
-      if (!(await isY2clerkAvailable())) {
-        await promptToLoadY2clerk();
+      const fn = await configuredFrequencyFunction();
+      if (!fn) {
+        return;
+      }
+
+      if (fn.packageName && !(await isRPackageAvailable(fn.packageName))) {
+        await promptToLoadRPackage(fn.packageName);
         return;
       }
 
@@ -83,9 +93,7 @@ export function registerRunFrequenciesCommand(): vscode.Disposable {
         return;
       }
 
-      const code = target.expressionUpToHere
-        ? `${target.expressionUpToHere} |> y2clerk::freqs(${target.selectorExpression})`
-        : `y2clerk::freqs(${target.dataframe}, ${target.selectorExpression})`;
+      const code = buildFrequenciesCode(fn, target);
 
       try {
         await positron.runtime.executeCode('r', code, true);
@@ -94,6 +102,21 @@ export function registerRunFrequenciesCommand(): vscode.Disposable {
       }
     },
   );
+}
+
+async function configuredFrequencyFunction(): Promise<FrequencyFunction | undefined> {
+  const config = vscode.workspace.getConfiguration(CONFIG_SECTION);
+  const result = resolveFrequencyFunction(config.get('frequencyFunction'), config.get('customFrequencyFunction'));
+  if (result.ok) {
+    return result.fn;
+  }
+
+  const openSettings = 'Open Settings';
+  const choice = await vscode.window.showErrorMessage(result.reason, openSettings);
+  if (choice === openSettings) {
+    await vscode.commands.executeCommand('workbench.action.openSettings', `${CONFIG_SECTION}.customFrequencyFunction`);
+  }
+  return undefined;
 }
 
 async function resolveTargetAtActiveCursor(): Promise<RunFrequenciesTarget | undefined> {
