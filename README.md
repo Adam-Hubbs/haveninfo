@@ -48,6 +48,9 @@ All under the `havenLabels.*` namespace (Settings UI: search "Haven Labels"):
 | `havenLabels.outputMode` | `"short"` | `"short"` shows just the variable label. `"full"` also shows a table of value labels beneath it. |
 | `havenLabels.maxValueLabels` | `10` | In `"full"` mode, how many value labels to show before truncating with a "...and N more" note. |
 | `havenLabels.dataMaskingFunctions` | the built-in dplyr/tidyr/etc. list | The R functions treated as data-masking calls when resolving a column reference. **This setting fully replaces the built-in list, it does not merge with it** — copy the default from the Settings UI/`package.json` as a starting point if you just want to add one function. Each entry is `{ "name": "select", "position": 0, "argName": ".data" }`; `position`/`argName` are both optional and only matter for *non-piped* calls (`select(df, x)`) — a function with neither is still recognized when piped (`df \|> select(x)`). |
+| `havenLabels.showRunFrequenciesLink` | `true` | Shows a "Run frequencies" link on hover that runs the frequency function below in the R console, at that point in the pipeline. |
+| `havenLabels.frequencyFunction` | `"y2clerk::freqs"` | The R function "Run frequencies" calls: `"y2clerk::freqs"`, `"freq2::freqs"` (same interface, faster, and works on lazy data frames, database connections, and on-disk formats), or `"custom"`. It's called as `data \|> fn(column)` or `fn(data, column)`. |
+| `havenLabels.customFrequencyFunction` | `""` | With `frequencyFunction` set to `"custom"`, the function to call, e.g. `"mypkg::my_freqs"` or `"my_freqs"`. A name only, no arguments. |
 | `havenLabels.debug` | `false` | Logs verbose diagnostics (including why a hover lookup silently failed) to the "Haven Labels" output channel. |
 
 ### Known scope limits

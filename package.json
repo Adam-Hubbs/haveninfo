@@ -373,7 +373,27 @@
 				"havenLabels.showRunFrequenciesLink": {
 					"type": "boolean",
 					"default": true,
-					"description": "Show a \"Run frequencies\" link on hover that runs y2clerk::freqs() visibly in the R console for the hovered column, at that point in the pipeline. Shown even for columns with no haven label."
+					"description": "Show a \"Run frequencies\" link on hover that runs the configured frequency function (see havenLabels.frequencyFunction) visibly in the R console for the hovered column, at that point in the pipeline. Shown even for columns with no haven label."
+				},
+				"havenLabels.frequencyFunction": {
+					"type": "string",
+					"enum": [
+						"y2clerk::freqs",
+						"freq2::freqs",
+						"custom"
+					],
+					"enumDescriptions": [
+						"y2clerk::freqs()",
+						"freq2::freqs(): same interface as y2clerk::freqs(), but faster, and also works on lazy data frames, database connections, and on-disk formats.",
+						"The function named in havenLabels.customFrequencyFunction."
+					],
+					"default": "y2clerk::freqs",
+					"markdownDescription": "The R function \"Run frequencies\" calls. It's called as `data |> fn(column)` (or `fn(data, column)`), so it must take a dataframe first, then tidyselect column selectors, like `y2clerk::freqs()`."
+				},
+				"havenLabels.customFrequencyFunction": {
+					"type": "string",
+					"default": "",
+					"markdownDescription": "The R function \"Run frequencies\" calls when `#havenLabels.frequencyFunction#` is `custom`, e.g. `mypkg::my_freqs` or `my_freqs`. Just the function name, no arguments; wrap it in your own function if you need extra arguments. If namespace-qualified, the package is checked for (and offered to be loaded) first."
 				},
 				"havenLabels.debug": {
 					"type": "boolean",
