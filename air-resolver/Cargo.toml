@@ -9,11 +9,12 @@ description = "Column-reference resolver for the Haven Info extension, built on 
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-# Pinned to the commit that landed posit-dev/air#548 (Aether's Pratt parser).
-air_r_parser = { git = "https://github.com/posit-dev/air", rev = "79cc4d0" }
-air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "79cc4d0" }
+# Air's main as of 2026-11-16: the Pratt parser on mainline biome (no
+# released Air version has the latter yet).
+air_r_parser = { git = "https://github.com/posit-dev/air", rev = "1fb34aa" }
+air_r_syntax = { git = "https://github.com/posit-dev/air", rev = "1fb34aa" }
 # Must match the biome revision Air's workspace pins, so the rowan types unify.
-biome_rowan = { git = "https://github.com/lionel-/biome", rev = "a1296ea6ba363d8b8d8f02181b2a4ce9315c5ef9" }
+biome_rowan = { git = "https://github.com/biomejs/biome", rev = "8c43bc0b620e0db4ec841ae20756acedcead9599" }
 js-sys = "0.3"
 wasm-bindgen = "0.2"
 
