@@ -1,0 +1,110 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, unit tests, package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      - run: npm run compile
+      - run: npm run lint
+      - run: npm run test:unit
+      - name: Package extension
+        run: npx vsce package --out haveninfo.vsix
+      - uses: actions/upload-artifact@v7
+        with:
+          name: haveninfo-vsix
+          path: haveninfo.vsix
+          if-no-files-found: error
+
+  integration:
+    name: Integration tests (VS Code ${{ matrix.vscode }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Oldest supported (engines.vscode) and current.
+        vscode: ["1.104.0", stable]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      - run: npm run compile
+      - name: Run VS Code extension tests
+        run: xvfb-run -a npx vscode-test
+        env:
+          VSCODE_TEST_VERSION: ${{ matrix.vscode }}
+
+  rust:
+    name: Air resolver (Rust)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: air-resolver
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: air-resolver
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo clippy --target wasm32-unknown-unknown -- -D warnings
+      - run: cargo test
+
+  wasm:
+    name: Rebuilt wasm passes unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: air-resolver
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      # The extension ships the committed wasm, so test what the crate
+      # currently builds too: a Cargo.lock bump (e.g. from Dependabot) that
+      # nobody rebuilt would otherwise go unexercised.
+      - run: npm run build-parser
+      - run: npm run test:unit
+      # Not an error: wasm-opt and toolchain versions can make byte-identical
+      # builds differ across machines.
+      - name: Flag stale vendored wasm
+        run: |
+          if ! git diff --quiet -- src/ast/air; then
+            echo "::warning title=Vendored wasm differs::src/ast/air differs from a fresh build. If this PR changes air-resolver or its Cargo.lock, run 'npm run build-parser' and commit the result."
+            git diff --stat -- src/ast/air
+          fi

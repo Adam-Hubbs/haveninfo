@@ -1,0 +1,40 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Pinned to engines.vscode so typechecking catches APIs newer than the
+      # oldest VS Code we support. Bump together with engines.vscode.
+      - dependency-name: "@types/vscode"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Should track the Node major bundled in VS Code's Electron.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: cargo
+    directory: /air-resolver
+    schedule:
+      interval: weekly
+    groups:
+      cargo-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Git-pinned and must move in lockstep (biome_rowan has to match the
+      # biome revision Air's workspace pins). Upgrade these by hand.
+      - dependency-name: air_r_parser
+      - dependency-name: air_r_syntax
+      - dependency-name: biome_rowan
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      github-actions:
+        patterns: ["*"]
