@@ -3,6 +3,7 @@
 ## Unreleased
 
 - New `havenLabels.frequencyFunction` setting chooses which function "Run frequencies" calls: `y2clerk::freqs` (default), `freq2::freqs`, or a custom function set in `havenLabels.customFrequencyFunction`.
+- Updated to the latest [Air](https://github.com/posit-dev/air) R parser, which now builds on upstream Biome.
 
 ## 0.3.0
 

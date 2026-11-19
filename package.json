@@ -35,20 +35,20 @@
 		"@eslint/js": "^10.0.1",
 		"@stylistic/eslint-plugin": "^5.10.0",
 		"@types/mocha": "^10.0.10",
-		"@types/node": "^22.20.1",
-		"@types/vscode": "^1.104.0",
+		"@types/node": "^22.20.5",
+		"@types/vscode": "~1.104.0",
 		"@vscode/test-cli": "^0.0.15",
 		"@vscode/test-electron": "^3.1.0",
 		"@vscode/vsce": "^3.9.2",
-		"eslint": "^10.9.0",
-		"glob": "^13.0.6",
+		"eslint": "^10.15.0",
+		"glob": "^13.0.7",
 		"mocha": "^11.8.0",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.68.0",
-		"vitest": "^4.1.11"
+		"typescript-eslint": "^8.73.0",
+		"vitest": "^4.1.12"
 	},
 	"dependencies": {
-		"@posit-dev/positron": "^0.2.8"
+		"@posit-dev/positron": "^0.2.15"
 	},
 	"contributes": {
 		"commands": [
