@@ -23,7 +23,7 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./ && npm run copy-assets",
 		"copy-assets": "node scripts/copy-assets.js",
-		"lint": "eslint",
+		"lint": "biome lint",
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
 		"test": "vscode-test",
@@ -32,19 +32,16 @@
 		"package": "vsce package"
 	},
 	"devDependencies": {
-		"@eslint/js": "^10.0.1",
-		"@stylistic/eslint-plugin": "^6.0.1",
+		"@biomejs/biome": "2.6.8",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^22.20.5",
 		"@types/vscode": "~1.104.0",
 		"@vscode/test-cli": "^0.0.15",
 		"@vscode/test-electron": "^3.1.0",
 		"@vscode/vsce": "^4.1.1",
-		"eslint": "^10.15.0",
 		"glob": "^14.0.6",
 		"mocha": "^12.0.3",
-		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.73.0",
+		"typescript": "^7.0.2",
 		"vitest": "^5.1.1"
 	},
 	"dependencies": {

@@ -86,7 +86,7 @@ npm install
 |---|---|
 | `npm run compile` | `tsc` + copies the vendored Air resolver wasm and its JS glue into `out/` |
 | `npm run watch` | `tsc -watch` (does **not** re-copy the wasm -- rerun `compile` after rebuilding the parser) |
-| `npm run lint` | ESLint |
+| `npm run lint` | Biome |
 | `npm run test:unit` | Fast, plain-Node `vitest` tests for the pure extractor (`src/extractor/*.spec.ts`) |
 | `npm test` | Full `vscode-test`/Mocha integration suite in a real Extension Development Host (`src/test/**/*.test.ts`) |
 | `npm run build-parser` | Rebuilds `air-resolver/` to WebAssembly into `src/ast/air/` (needs Rust + `wasm-pack`) |

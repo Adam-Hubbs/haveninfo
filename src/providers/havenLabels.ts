@@ -1,5 +1,5 @@
 // providers/havenLabels.ts
-import * as vscode from 'vscode';
+import type * as vscode from 'vscode';
 import { tryAcquirePositronApi } from '@posit-dev/positron';
 import { Logger } from '../utils/logger';
 import { isValidRIdentifier } from '../utils/rIdentifier';
@@ -84,7 +84,7 @@ class HavenLabelsProvider {
     }
 
     const session = await positron.runtime.getForegroundSession();
-    if (!session || session.runtimeMetadata.languageId !== 'r') {
+    if (session?.runtimeMetadata.languageId !== 'r') {
       return NONE_RESULT;
     }
 

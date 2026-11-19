@@ -24,7 +24,7 @@ export async function isRPackageAvailable(
   }
 
   const session = await positron.runtime.getForegroundSession();
-  if (!session || session.runtimeMetadata.languageId !== 'r') {
+  if (session?.runtimeMetadata.languageId !== 'r') {
     return false;
   }
 

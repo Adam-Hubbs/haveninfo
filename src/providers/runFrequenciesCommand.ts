@@ -121,7 +121,7 @@ async function configuredFrequencyFunction(): Promise<FrequencyFunction | undefi
 
 async function resolveTargetAtActiveCursor(): Promise<RunFrequenciesTarget | undefined> {
   const editor = vscode.window.activeTextEditor;
-  if (!editor || editor.document.languageId !== 'r') {
+  if (editor?.document.languageId !== 'r') {
     return undefined;
   }
 

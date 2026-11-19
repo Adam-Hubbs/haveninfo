@@ -6,7 +6,7 @@
 .vscode/**
 .github/**
 .gitignore
-eslint.config.mjs
+biome.json
 tsconfig.json
 vitest.config.mts
 scripts/**

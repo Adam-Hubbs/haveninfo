@@ -112,8 +112,8 @@ function renderExactHover(
 
   const sections = [`**${escapeMarkdown(reference.column)}**`];
 
-  if (hasLabel) {
-    sections.push(escapeMarkdown(lookup.label!));
+  if (lookup.label) {
+    sections.push(escapeMarkdown(lookup.label));
   }
 
   if (hasValueLabels) {

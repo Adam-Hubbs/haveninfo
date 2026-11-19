@@ -1,4 +1,4 @@
-import * as vscode from "vscode";
+import type * as vscode from "vscode";
 import { registerHoverProvider } from './providers/hoverProvider';
 import { registerShowAllValueLabelsCommand } from './providers/showAllValueLabelsCommand';
 import { registerRunFrequenciesCommand } from './providers/runFrequenciesCommand';

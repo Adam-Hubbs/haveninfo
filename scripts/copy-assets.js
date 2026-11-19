@@ -6,8 +6,8 @@
 //
 // Run as part of `npm run compile` (after `tsc`), not standalone.
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const ASSETS = [
   ["src/ast/air/air_resolver.js", "out/ast/air/air_resolver.js"],

@@ -1,5 +1,5 @@
-import * as path from 'path';
-// eslint-disable-next-line @typescript-eslint/no-require-imports -- mocha's `export =` typing needs TS's import-equals form to remain constructable.
+import * as path from 'node:path';
+// mocha's `export =` typing needs TS's import-equals form to remain constructable.
 import Mocha = require('mocha');
 import { glob } from 'glob';
 
@@ -14,7 +14,9 @@ export function run(): Promise<void> {
 
 	return new Promise((c, e) => {
 		glob('**/**.test.js', { cwd: testsRoot }).then(files => {
-			files.forEach(f => mocha.addFile(path.resolve(testsRoot, f)));
+			for (const f of files) {
+				mocha.addFile(path.resolve(testsRoot, f));
+			}
 
 			try {
 				mocha.run((failures: number) => {

@@ -43,6 +43,7 @@ export function resolveFrequencyFunction(setting: unknown, customFunction: unkno
   }
 
   const preset = FREQUENCY_FUNCTION_PRESETS.find((p) => p === setting) ?? DEFAULT_FREQUENCY_FUNCTION;
+  // biome-ignore lint/style/noNonNullAssertion: presets are fixed, valid function references.
   return { ok: true, fn: parseFunctionReference(preset)! };
 }
 

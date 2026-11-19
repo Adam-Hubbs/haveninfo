@@ -1,4 +1,4 @@
-import * as assert from 'assert';
+import * as assert from 'node:assert';
 import * as vscode from 'vscode';
 import { resolveReferenceAt } from '../../providers/resolveReferenceAt';
 
@@ -50,7 +50,7 @@ suite('Extension Test Suite', () => {
 	test('extension is present and active', () => {
 		const ext = vscode.extensions.getExtension(EXTENSION_ID);
 		assert.ok(ext, 'extension should be found');
-		assert.ok(ext!.isActive, 'extension should be active');
+		assert.ok(ext.isActive, 'extension should be active');
 	});
 
 	/**

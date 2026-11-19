@@ -9,9 +9,9 @@
 //
 // Usage: node scripts/build-parser.js
 
-const { execFileSync } = require("child_process");
-const fs = require("fs");
-const path = require("path");
+const { execFileSync } = require("node:child_process");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const ROOT = path.join(__dirname, "..");
 const OUT_DIR = path.join(ROOT, "src", "ast", "air");
